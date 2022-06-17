@@ -1,0 +1,38 @@
+---
+- name: gather facts for web group
+  hosts: web
+  gather_facts: true
+- name: ha proxy
+  hosts: lb
+  become: true
+  tasks:
+    - name: install haproxy
+      yum:
+        name: haproxy
+        state: present
+        update_cache: true
+    - name: start and enable haproxy
+      service:
+        name: haproxy
+        state: started
+        enabled: yes
+    - name: haproxy config
+      template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+        mode: 0640
+        group: root
+        owner: root
+      notify: restart haproxy
+    - name: open firewall on 80
+      firewalld:
+        port: 80/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+  handlers:
+    - name: restart haproxy
+      service:
+        name: haproxy
+        state: restarted
+...

@@ -1,0 +1,72 @@
+---
+- name: web servers
+  hosts: web
+  become: true # sudo
+  tasks:
+    - name: install apache and php
+      yum:
+        name: httpd
+        state: present
+        update_cache: true
+    - name: install packages
+      yum:
+        name: 
+          - php
+          - git
+          - php-mysql
+          - php-pdo
+          - php-pdo_mysql
+        state: present
+        update_cache: true
+      notify: restart apache
+    - name: start apache service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+    - name: deploy index.php from git repo
+      git:
+        repo: "{{ repository }}"
+        dest: "{{ document_root_path }}"
+        force: yes
+    - name: vhost config
+      block:
+      - name: virtual host config
+        copy:
+          src: files/ansible_site.conf
+          dest: "{{ vhost_config_file }}"
+          owner: root
+        notify: restart apache
+      - name: check configuration validity
+        command: httpd -t
+      rescue:
+      - name: Remove bad vhost configuration
+        file:
+          path: "{{ vhost_config_file }}"
+          state: absent
+      - name: Rolling back - ending playbook
+        fail:
+          msg: "Configuration file is not valid. Please check it before rerunning the playbook."
+    - name: httpd config
+      lineinfile:
+        path: "{{ apache_config_file }}"
+        regexp: "^IncludeOptional"
+        line: "IncludeOptional conf.d/*.conf"
+      notify: restart apache
+    - name: install hello world php
+      copy:
+        src: files/db.php
+        dest: "{{ document_root_path }}db.php"
+        mode: 0775
+    - name: allow traffic on 80
+      firewalld:
+        port: 80/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+  handlers:
+    - name: restart apache
+      service:
+        name: httpd
+        state: restarted
+...
