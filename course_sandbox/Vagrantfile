@@ -18,9 +18,9 @@ config.vm.define "controller" do |controller|
 controller.vm.box = "centos/7"
 controller.vm.hostname = "controller.test"
 controller.vm.network :private_network, ip: "192.168.60.4"
-controller.vm.synced_folder "/Users/uguroktay/mountpoint", "/home/vagrant/ansible", type: "sshfs"
+controller.vm.synced_folder "C:\\Users\\paulb\\Documents\\udemy_ansible\\mountpoint", "/home/vagrant/ansible", type: "sshfs"
 end
-# LB 
+# LB
 config.vm.define "lb1" do |lb1|
 lb1.vm.box = "centos/7"
 lb1.vm.hostname = "lb1.test"
